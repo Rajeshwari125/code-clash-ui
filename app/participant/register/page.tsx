@@ -43,8 +43,7 @@ export default function ParticipantRegister() {
           members: validParticipants,
           status: 'Active',
           joined: new Date().toISOString(),
-          email: '', // Optional field
-          score: 0
+          email: '' // Optional field
         });
 
         // Save team data to localStorage for session persistence

@@ -33,6 +33,7 @@ interface Quiz {
 }
 
 const INITIAL_QUIZZES: Quiz[] = [];
+import { getQuizzes, createQuiz, deleteQuiz } from '@/lib/db';
 
 export default function QuizManagement() {
   const [quizzes, setQuizzes] = useState<Quiz[]>(INITIAL_QUIZZES);
@@ -42,22 +43,25 @@ export default function QuizManagement() {
   const [showQuestionEntry, setShowQuestionEntry] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
 
-  // Load quizzes from localStorage on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedQuizzes = localStorage.getItem('quizzes');
-      if (savedQuizzes) {
-        setQuizzes(JSON.parse(savedQuizzes));
-      }
+  // Load quizzes from Supabase
+  const loadQuizzes = async () => {
+    try {
+      const data = await getQuizzes();
+      // Transform data if needed, matching interface
+      const formattedQuizzes = data.map((q: any) => ({
+        ...q,
+        created: new Date(q.created).toISOString().split('T')[0],
+        questionsData: q.questions_data // Map DB column to interface
+      }));
+      setQuizzes(formattedQuizzes);
+    } catch (error) {
+      console.error('Error loading quizzes:', error);
     }
-  }, []);
+  };
 
-  // Save quizzes to localStorage whenever they change
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('quizzes', JSON.stringify(quizzes));
-    }
-  }, [quizzes]);
+    loadQuizzes();
+  }, []);
 
   // Form states
   const [quizData, setQuizData] = useState<QuizData>({
@@ -140,31 +144,37 @@ export default function QuizManagement() {
   };
 
   // Step 3: Finish and save to database
-  const handleFinishQuiz = (questions: Question[]) => {
-    const code = `${quizData.title.substring(0, 3).toUpperCase()}${String(quizzes.length + 1).padStart(3, '0')}`;
+  const handleFinishQuiz = async (questions: Question[]) => {
+    const code = `${quizData.title.substring(0, 3).toUpperCase()}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
 
-    const newQuiz: Quiz = {
-      id: quizzes.length > 0 ? Math.max(...quizzes.map(q => q.id)) + 1 : 1,
-      title: quizData.title,
-      questions: quizData.numberOfQuestions,
-      status: 'Draft',
-      code: code,
-      participants: 0,
-      duration: quizData.timeLimit,
-      created: new Date().toISOString().split('T')[0],
-      questionsData: questions
-    };
+    try {
+      await createQuiz({
+        title: quizData.title,
+        questions: quizData.numberOfQuestions,
+        status: 'Draft',
+        code: code,
+        participants: 0,
+        duration: quizData.timeLimit,
+        created: new Date().toISOString(),
+        questions_data: questions
+      });
 
-    setQuizzes([...quizzes, newQuiz]);
+      // Show success message with code
+      alert(`✅ Quiz Created Successfully!\n\nQuiz Title: ${quizData.title}\nQuiz Code: ${code}\nTotal Questions: ${quizData.numberOfQuestions}\nTime Limit: ${quizData.timeLimit} minutes\n\nYou can now activate this quiz for participants!`);
 
-    // Show success message with code
-    alert(`✅ Quiz Created Successfully!\n\nQuiz Title: ${quizData.title}\nQuiz Code: ${code}\nTotal Questions: ${quizData.numberOfQuestions}\nTime Limit: ${quizData.timeLimit} minutes\n\nYou can now activate this quiz for participants!`);
+      // Refresh list
+      loadQuizzes();
 
-    // Reset all states
-    setQuizData({ title: '', numberOfQuestions: 0, timeLimit: 0, questions: [] });
-    setCurrentQuestionIndex(0);
-    setCurrentQuestion({ question: '', options: ['', '', '', ''], correctAnswer: 0 });
-    setShowQuestionEntry(false);
+      // Reset all states
+      setQuizData({ title: '', numberOfQuestions: 0, timeLimit: 0, questions: [] });
+      setCurrentQuestionIndex(0);
+      setCurrentQuestion({ question: '', options: ['', '', '', ''], correctAnswer: 0 });
+      setShowQuestionEntry(false);
+
+    } catch (error) {
+      console.error('Error creating quiz:', error);
+      alert('Failed to create quiz. Please try again.');
+    }
   };
 
   const handlePreviousQuestion = () => {
@@ -186,12 +196,18 @@ export default function QuizManagement() {
     setShowDeleteDialog(true);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (selectedQuiz) {
-      setQuizzes(quizzes.filter(q => q.id !== selectedQuiz.id));
-      alert(`Quiz "${selectedQuiz.title}" deleted successfully!`);
-      setSelectedQuiz(null);
-      setShowDeleteDialog(false);
+      try {
+        await deleteQuiz(selectedQuiz.id);
+        alert(`Quiz "${selectedQuiz.title}" deleted successfully!`);
+        loadQuizzes(); // Reload from DB
+        setSelectedQuiz(null);
+        setShowDeleteDialog(false);
+      } catch (error) {
+        console.error('Error deleting quiz:', error);
+        alert('Failed to delete quiz.');
+      }
     }
   };
 

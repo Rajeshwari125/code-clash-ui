@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Search, Users, MapPin, Clock, Eye, Mail, Phone, Trash2, X } from 'lucide-react';
 import AdminLayout from '@/components/admin/admin-layout';
-import { getParticipants, deleteParticipant } from '@/lib/db';
+import { getParticipants, deleteParticipant, getQuizResults } from '@/lib/db';
 
 interface Participant {
   id: number;
@@ -26,16 +26,26 @@ export default function Participants() {
 
   // Load participants from localStorage (quiz results)
   // Load participants from Supabase
+  // Load participants and results from Supabase
   const loadParticipants = async () => {
     try {
-      const data = await getParticipants();
+      const [participantsData, resultsData] = await Promise.all([
+        getParticipants(),
+        getQuizResults()
+      ]);
+
+      // Create a set of participant IDs that have completed a quiz
+      const completedParticipantIds = new Set(resultsData.map((r: any) => r.participant_id));
 
       // Format data
-      // Supabase returns dates as strings, we might want to format them
-      const formattedData = data.map((p: any) => ({
+      const formattedData = participantsData.map((p: any) => ({
         ...p,
         members: Array.isArray(p.members) ? p.members.length : p.members, // Handle JSONB array
-        joined: new Date(p.joined).toLocaleDateString()
+        joined: new Date(p.joined).toLocaleDateString(),
+        // dynammically determine status based on results
+        status: completedParticipantIds.has(p.id) ? 'Completed' : 'Active',
+        // Get score from results
+        score: resultsData.find((r: any) => r.participant_id === p.id)?.score || 0
       }));
 
       setParticipants(formattedData);

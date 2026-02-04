@@ -122,5 +122,16 @@
 
   body {
     @apply bg-background text-foreground;
+    background-image: url('/background-theme.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
   }
+}
+
+/* Utility to override background for admin pages */
+.admin-body {
+  background-image: none !important;
+  background-color: var(--background);
 }

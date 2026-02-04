@@ -28,6 +28,7 @@ export default function Quiz() {
   const [error, setError] = useState('');
   const [initialTime, setInitialTime] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [finalTimeTaken, setFinalTimeTaken] = useState('');
 
   // Load quiz from localStorage
   useEffect(() => {
@@ -43,14 +44,17 @@ export default function Quiz() {
       try {
         const quizData = JSON.parse(currentQuizData);
 
-        if (!quizData.questionsData || quizData.questionsData.length === 0) {
+        // Check for questions data in snake_case (Supabase) or camelCase (potential legacy/local)
+        const questionsList = quizData.questions_data || quizData.questionsData;
+
+        if (!questionsList || questionsList.length === 0) {
           setError('Quiz has no questions. Please contact admin.');
           setLoading(false);
           return;
         }
 
         // Convert admin questions to quiz format
-        const formattedQuestions: Question[] = quizData.questionsData.map((q: any, index: number) => ({
+        const formattedQuestions: Question[] = questionsList.map((q: any, index: number) => ({
           id: index + 1,
           question: q.question,
           options: q.options,
@@ -73,19 +77,23 @@ export default function Quiz() {
   }, []);
 
   useEffect(() => {
-    if (timeLeft <= 0 && !loading && questions.length > 0) {
+    // Auto-submit if time runs out
+    if (timeLeft <= 0 && !loading && questions.length > 0 && !submitted) {
+      // Force set timeLeft to 0 to ensure calculation is correct
+      setTimeLeft(0);
       handleSubmit();
       return;
     }
 
-    if (!loading && questions.length > 0) {
+    // Timer logic
+    if (!loading && questions.length > 0 && !submitted) {
       const timer = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
+        setTimeLeft(prev => Math.max(0, prev - 1));
       }, 1000);
 
       return () => clearInterval(timer);
     }
-  }, [timeLeft, loading, questions]);
+  }, [timeLeft, loading, questions, submitted]);
 
   const handleSelectOption = (optionIndex: number) => {
     const newQuestions = [...questions];
@@ -112,7 +120,9 @@ export default function Quiz() {
     // Calculate score
     const correctAnswers = questions.filter((q, index) => q.answered === q.correctAnswer).length;
     const score = (correctAnswers / questions.length) * 100;
-    const timeTaken = formatTime(initialTime - timeLeft);
+    const finalTimeLeft = timeLeft;
+    const timeTaken = formatTime(initialTime - finalTimeLeft);
+    setFinalTimeTaken(timeTaken); // We'll need to add this state
 
     // Get team info from localStorage (saved during registration)
     const teamData = localStorage.getItem('teamData') || '{}';
@@ -206,7 +216,7 @@ export default function Quiz() {
                 <div className="text-center p-3 bg-card/50 rounded-lg">
                   <p className="text-muted-foreground text-xs mb-1">Time Taken</p>
                   <p className="text-xl sm:text-2xl font-bold text-accent">
-                    {formatTime(initialTime - timeLeft)}
+                    {finalTimeTaken}
                   </p>
                 </div>
               </div>

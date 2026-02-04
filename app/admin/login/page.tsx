@@ -129,22 +129,7 @@ export default function AdminLogin() {
         </form>
 
         {/* Demo Credentials */}
-        <div className="mt-8 p-5 bg-gradient-to-r from-secondary/30 to-secondary/20 border border-secondary/50 rounded-lg">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 bg-accent rounded-full animate-pulse" />
-            <p className="text-xs text-muted-foreground font-semibold tracking-wider">DEMO CREDENTIALS</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm">
-              <span className="text-muted-foreground">Username:</span>{' '}
-              <span className="font-mono font-semibold text-accent">admin</span>
-            </p>
-            <p className="text-sm">
-              <span className="text-muted-foreground">Password:</span>{' '}
-              <span className="font-mono font-semibold text-accent">admin123</span>
-            </p>
-          </div>
-        </div>
+
 
         {/* Back Link */}
         <div className="mt-6 text-center">

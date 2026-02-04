@@ -26,7 +26,7 @@ export interface Participant {
     status: 'Active' | 'Completed'
     joined: string
     email: string
-    score: number
+    score?: number
 }
 
 export interface QuizResult {

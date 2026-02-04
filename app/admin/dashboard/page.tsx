@@ -26,7 +26,52 @@ const recentActivities: Array<{
   participants: number;
 }> = [];
 
+import { getParticipants, getQuizzes, getQuizResults } from '@/lib/db';
+import { useState, useEffect } from 'react';
+
 export default function AdminDashboard() {
+  const [stats, setStats] = useState({
+    totalTeams: 0,
+    activeQuizzes: 0,
+    completedToday: 0,
+    totalParticipants: 0
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const [participants, quizzes, results] = await Promise.all([
+          getParticipants(),
+          getQuizzes(),
+          getQuizResults()
+        ]);
+
+        const totalMembers = participants.reduce((sum: number, p: any) => {
+          // Adjust based on updated logic where members might be an array or count
+          const count = Array.isArray(p.members) ? p.members.length : (typeof p.members === 'number' ? p.members : 0);
+          return sum + count;
+        }, 0);
+
+        // Calculate "Completed Today"
+        const today = new Date().toDateString();
+        const completedCount = results.filter((r: any) =>
+          new Date(r.submitted_at || r.created_at || Date.now()).toDateString() === today
+        ).length;
+
+        setStats({
+          totalTeams: participants.length,
+          activeQuizzes: quizzes.filter((q: any) => q.status === 'Active').length,
+          completedToday: completedCount,
+          totalParticipants: totalMembers
+        });
+      } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   return (
     <AdminLayout title="Admin Dashboard">
       {/* Welcome Section */}
@@ -41,7 +86,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         <StatCard
           title="Total Teams"
-          value={0}
+          value={stats.totalTeams}
           subtitle="Active registrations"
           icon={Users}
           trend={0}
@@ -49,7 +94,7 @@ export default function AdminDashboard() {
         />
         <StatCard
           title="Active Quizzes"
-          value={0}
+          value={stats.activeQuizzes}
           subtitle="Currently running"
           icon={FileQuestion}
           trend={0}
@@ -57,7 +102,7 @@ export default function AdminDashboard() {
         />
         <StatCard
           title="Completed Today"
-          value={0}
+          value={stats.completedToday}
           subtitle="Finished quizzes"
           icon={CheckCircle}
           trend={0}
@@ -65,7 +110,7 @@ export default function AdminDashboard() {
         />
         <StatCard
           title="Total Participants"
-          value={0}
+          value={stats.totalParticipants}
           subtitle="Registered users"
           icon={TrendingUp}
           trend={0}
