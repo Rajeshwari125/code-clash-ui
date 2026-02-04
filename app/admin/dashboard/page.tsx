@@ -18,6 +18,9 @@ import {
 import AdminLayout from '@/components/admin/admin-layout';
 import StatCard from '@/components/admin/stat-card';
 
+import { getParticipants, getQuizzes, getQuizResults } from '@/lib/db';
+import { useState, useEffect } from 'react';
+
 const recentActivities: Array<{
   id: number;
   title: string;
@@ -26,8 +29,7 @@ const recentActivities: Array<{
   participants: number;
 }> = [];
 
-import { getParticipants, getQuizzes, getQuizResults } from '@/lib/db';
-import { useState, useEffect } from 'react';
+
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
