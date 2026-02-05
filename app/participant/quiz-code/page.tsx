@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, AlertCircle, CheckCircle2, FileQuestion, Clock } from 'lucide-react';
 import { getQuizByCode } from '@/lib/db';
+import { OFFLINE_QUIZ, OFFLINE_QUIZ_CODE } from '@/lib/offline-data';
 
 export default function QuizCodeEntry() {
   const router = useRouter();
@@ -53,11 +54,25 @@ export default function QuizCodeEntry() {
         setTimeout(() => {
           router.push('/participant/quiz');
         }, 1500);
+      } else {
+        throw new Error('Quiz not found');
       }
     } catch (err) {
       console.error('Quiz fetch error:', err);
+
+      // Check for offline code
+      if (quizCode.toUpperCase() === OFFLINE_QUIZ_CODE) {
+        setFoundQuiz(OFFLINE_QUIZ);
+        setLoading(false);
+        localStorage.setItem('currentQuiz', JSON.stringify(OFFLINE_QUIZ));
+        setTimeout(() => {
+          router.push('/participant/quiz');
+        }, 1500);
+        return;
+      }
+
       setLoading(false);
-      setError('Invalid quiz code. Please check with your admin.');
+      setError('Invalid quiz code, or network error. Try code "OFFLINE" for local mode.');
     }
   };
 

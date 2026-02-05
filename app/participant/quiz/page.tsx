@@ -129,37 +129,50 @@ export default function Quiz() {
     const team = JSON.parse(teamData);
 
     try {
-      // Create result object for DB
-      await createQuizResult({
-        quiz_id: quizId,
-        participant_id: team.id, // Assuming teamData has id now
-        rank: 0, // Will be calculated by admin/DB view usually, or explicit update
-        team: team.teamName || 'Anonymous Team',
-        college: team.collegeName || 'Unknown College',
-        score: score,
-        correct: correctAnswers,
-        total: questions.length,
-        time: timeTaken,
-        submitted_at: new Date().toISOString()
-      });
+      let isOffline = false;
+
+      try {
+        // Create result object for DB
+        await createQuizResult({
+          quiz_id: quizId,
+          participant_id: team.id, // Assuming teamData has id now
+          rank: 0, // Will be calculated by admin/DB view usually, or explicit update
+          team: team.teamName || 'Anonymous Team',
+          college: team.collegeName || 'Unknown College',
+          score: score,
+          correct: correctAnswers,
+          total: questions.length,
+          time: timeTaken,
+          submitted_at: new Date().toISOString()
+        });
+      } catch (dbError) {
+        console.log('Online submission failed, saving locally:', dbError);
+        isOffline = true;
+      }
 
       // Also save to localStorage as backup/verify
       const existingResults = localStorage.getItem('quizResults');
       const results = existingResults ? JSON.parse(existingResults) : [];
       results.push({
         quiz_id: quizId,
+        participant_id: team.id,
         team: team.teamName,
+        college: team.collegeName,
         score,
         correct: correctAnswers,
         total: questions.length,
         time: timeTaken,
-        submittedAt: new Date().toISOString()
+        submittedAt: new Date().toISOString(),
+        isOffline
       });
       localStorage.setItem('quizResults', JSON.stringify(results));
 
       setSubmitted(true);
     } catch (err) {
       console.error('Error submitting quiz:', err);
+      // Even if everything fails, we rely on the localStorage set above (which is inside the outer try? No, it's after the inner catch).
+      // Wait, if inner catch handles it, execution continues.
+      // So outer catch only catches localStorage errors?
       setError('Failed to submit quiz results. Please try again or contact admin.');
     } finally {
       setIsSubmitting(false);
