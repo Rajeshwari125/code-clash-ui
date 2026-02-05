@@ -34,16 +34,8 @@ export default function QuizCodeEntry() {
       return;
     }
 
-    // Check for offline code immediately
-    if (quizCode.toUpperCase() === OFFLINE_QUIZ_CODE) {
-      setFoundQuiz(OFFLINE_QUIZ);
-      setLoading(false);
-      localStorage.setItem('currentQuiz', JSON.stringify(OFFLINE_QUIZ));
-      setTimeout(() => {
-        router.push('/participant/quiz');
-      }, 1500);
-      return;
-    }
+
+
 
     setLoading(true);
 
@@ -69,18 +61,7 @@ export default function QuizCodeEntry() {
     } catch (err) {
       console.error('Quiz fetch error:', err);
 
-      // Check for offline code
-      if (quizCode.toUpperCase() === OFFLINE_QUIZ_CODE) {
-        setFoundQuiz(OFFLINE_QUIZ);
-        setLoading(false);
-        localStorage.setItem('currentQuiz', JSON.stringify(OFFLINE_QUIZ));
-        setTimeout(() => {
-          router.push('/participant/quiz');
-        }, 1500);
-        return;
-      }
-
-      // Check Local Storage Backup (created by Admin on same machine)
+      // 1. Check Local Storage Backup (Admin edits/creations) - PRIORITIZE THIS
       try {
         const localQuizzes = JSON.parse(localStorage.getItem('local_quizzes_backup') || '[]');
         const localMatch = localQuizzes.find((q: any) => q.code === quizCode.toUpperCase());
@@ -99,10 +80,13 @@ export default function QuizCodeEntry() {
         console.error("Error reading local storage:", localError);
       }
 
+
+
       setLoading(false);
       setError('Invalid quiz code, or network error. Try code "OFFLINE" for local mode.');
-    }
+    } // End of outer try/catch
   };
+
 
   return (
     <div className="min-h-screen bg-background text-foreground">

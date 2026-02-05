@@ -1,65 +1,25 @@
 
 export const OFFLINE_QUIZ = {
     id: 99999,
-    title: 'Offline Challenge',
-    questions: 5,
+    title: 'Code Clash (Offline)',
+    questions: 1,
     status: 'Active',
-    code: 'OFFLINE',
+    code: 'COD138', // Updated to match your screenshot
     participants: 0,
     duration: 30, // minutes
     created: new Date().toISOString(),
     questions_data: [
         {
-            question: "What does HTML stand for?",
+            question: "Question 1",
             options: [
-                "Hyper Text Markup Language",
-                "High Tech Modern Language",
-                "Hyper Transfer Markup Language",
-                "Home Tool Markup Language"
+                "Option A",
+                "Option B",
+                "Option C",
+                "Option D"
             ],
             correctAnswer: 0
-        },
-        {
-            question: "Which language is used for styling web pages?",
-            options: [
-                "HTML",
-                "CSS",
-                "JavaScript",
-                "Python"
-            ],
-            correctAnswer: 1
-        },
-        {
-            question: "Which is not a JavaScript Framework?",
-            options: [
-                "React",
-                "Angular",
-                "Vue",
-                "Django"
-            ],
-            correctAnswer: 3
-        },
-        {
-            question: "What is the output of 2 + '2' in JavaScript?",
-            options: [
-                "4",
-                "22",
-                "NaN",
-                "Error"
-            ],
-            correctAnswer: 1
-        },
-        {
-            question: "Which company developed React?",
-            options: [
-                "Google",
-                "Amazon",
-                "Facebook (Meta)",
-                "Microsoft"
-            ],
-            correctAnswer: 2
         }
     ]
 };
 
-export const OFFLINE_QUIZ_CODE = 'OFFLINE';
+export const OFFLINE_QUIZ_CODE = 'COD138';

@@ -35,6 +35,7 @@ interface Quiz {
 
 const INITIAL_QUIZZES: Quiz[] = [];
 import { getQuizzes, createQuiz, deleteQuiz, updateQuiz } from '@/lib/db';
+import { OFFLINE_QUIZ } from '@/lib/offline-data';
 
 export default function QuizManagement() {
   const [quizzes, setQuizzes] = useState<Quiz[]>(INITIAL_QUIZZES);
@@ -46,6 +47,38 @@ export default function QuizManagement() {
 
   // Load quizzes from Supabase
   const loadQuizzes = async () => {
+    // 1. Load Local Storage Quizzes first (these are the offline ones)
+    let localQuizzes: Quiz[] = [];
+    try {
+      const stored = localStorage.getItem('local_quizzes_backup');
+      if (stored) {
+        localQuizzes = JSON.parse(stored);
+      } else {
+        // Seed with Default Offline Quiz if storage is empty
+        // We cast as any because OFFLINE_QUIZ type might differ slightly in strictness
+        localQuizzes = [{
+          ...OFFLINE_QUIZ,
+          questionsData: OFFLINE_QUIZ.questions_data,
+          created: new Date().toISOString().split('T')[0]
+        } as any];
+        // Save it immediately so it persists
+        localStorage.setItem('local_quizzes_backup', JSON.stringify(localQuizzes));
+      }
+
+      // Also ensure OFFLINE_QUIZ is in the list if deleted/missing (Optional, but good for "reset")
+      if (!localQuizzes.find((q: any) => q.code === OFFLINE_QUIZ.code)) {
+        const offlineSeed = {
+          ...OFFLINE_QUIZ,
+          questionsData: OFFLINE_QUIZ.questions_data,
+          created: new Date().toISOString().split('T')[0]
+        } as any;
+        localQuizzes.push(offlineSeed);
+      }
+
+    } catch (e) {
+      console.error("Error reading local storage", e);
+    }
+
     try {
       const data = await getQuizzes();
       // Transform data if needed, matching interface
@@ -54,9 +87,21 @@ export default function QuizManagement() {
         created: new Date(q.created).toISOString().split('T')[0],
         questionsData: q.questions_data // Map DB column to interface
       }));
-      setQuizzes(formattedQuizzes);
+
+      // Merge: Prefer DB quizzes, but include local ones if they don't exist in DB (by code)
+      const merged = [...formattedQuizzes];
+      localQuizzes.forEach(lq => {
+        if (!merged.find(mq => mq.code === lq.code)) {
+          // If not in DB list, add it (it's purely local)
+          merged.push(lq);
+        }
+      });
+
+      setQuizzes(merged);
     } catch (error) {
-      console.error('Error loading quizzes:', error);
+      console.error('Error loading quizzes (Online failed):', error);
+      // Fallback: If DB fails, show just local quizzes
+      setQuizzes(localQuizzes);
     }
   };
 
@@ -506,6 +551,115 @@ export default function QuizManagement() {
                   </>
                 )}
               </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Edit Quiz Modal */}
+      {showEditModal && selectedQuiz && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-4xl p-8 bg-card relative max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold mb-6">Edit Quiz: {selectedQuiz.title}</h2>
+
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Title</label>
+                  <Input
+                    value={selectedQuiz.title}
+                    onChange={(e) => setSelectedQuiz({ ...selectedQuiz, title: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Duration (mins)</label>
+                  <Input
+                    type="number"
+                    value={selectedQuiz.duration}
+                    onChange={(e) => setSelectedQuiz({ ...selectedQuiz, duration: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+
+              {/* Questions Editor */}
+              <div>
+                <h3 className="font-semibold mb-3">Questions</h3>
+                <div className="space-y-6">
+                  {selectedQuiz.questionsData?.map((q, qIndex) => (
+                    <div key={qIndex} className="p-4 border border-border/50 rounded-lg bg-secondary/10">
+                      <div className="mb-3">
+                        <label className="block text-xs font-medium mb-1 uppercase text-muted-foreground">Question {qIndex + 1}</label>
+                        <Textarea
+                          value={q.question}
+                          onChange={(e) => {
+                            const newQuestions = [...(selectedQuiz.questionsData || [])];
+                            newQuestions[qIndex].question = e.target.value;
+                            setSelectedQuiz({ ...selectedQuiz, questionsData: newQuestions });
+                          }}
+                          className="min-h-[80px]"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {q.options.map((opt, oIndex) => (
+                          <div key={oIndex} className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              name={`correct-${qIndex}`}
+                              checked={q.correctAnswer === oIndex}
+                              onChange={() => {
+                                const newQuestions = [...(selectedQuiz.questionsData || [])];
+                                newQuestions[qIndex].correctAnswer = oIndex;
+                                setSelectedQuiz({ ...selectedQuiz, questionsData: newQuestions });
+                              }}
+                              className="w-4 h-4 text-accent"
+                            />
+                            <Input
+                              value={opt}
+                              onChange={(e) => {
+                                const newQuestions = [...(selectedQuiz.questionsData || [])];
+                                newQuestions[qIndex].options[oIndex] = e.target.value;
+                                setSelectedQuiz({ ...selectedQuiz, questionsData: newQuestions });
+                              }}
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-3 justify-end mt-6">
+                <Button variant="outline" onClick={() => setShowEditModal(false)}>Cancel</Button>
+                <Button onClick={async () => {
+                  try {
+                    // Update Local Storage
+                    const localQuizzes = JSON.parse(localStorage.getItem('local_quizzes_backup') || '[]');
+                    const updatedLocal = localQuizzes.map((q: any) => q.id === selectedQuiz.id ? selectedQuiz : q);
+                    localStorage.setItem('local_quizzes_backup', JSON.stringify(updatedLocal));
+
+                    // Try to update DB if possible
+                    try {
+                      const { questionsData, ...quizFields } = selectedQuiz;
+                      await updateQuiz(selectedQuiz.id, {
+                        ...quizFields,
+                        status: quizFields.status as 'Active' | 'Completed' | 'Draft',
+                        questions_data: questionsData
+                      });
+                    } catch (e) {
+                      console.warn("Failed to update remote DB", e);
+                    }
+
+                    alert("Quiz updated successfully!");
+                    setShowEditModal(false);
+                    loadQuizzes();
+                  } catch (e) {
+                    console.error(e);
+                    alert("Error updating quiz");
+                  }
+                }} className="bg-accent text-accent-foreground">Save Changes</Button>
+              </div>
             </div>
           </Card>
         </div>
