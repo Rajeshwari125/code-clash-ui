@@ -29,8 +29,8 @@ export default function QuizCodeEntry() {
       return;
     }
 
-    if (quizCode.length < 6) {
-      setError('Quiz code must be at least 6 characters');
+    if (quizCode.length < 3) {
+      setError('Quiz code must be at least 3 characters');
       return;
     }
 
@@ -59,7 +59,7 @@ export default function QuizCodeEntry() {
         throw new Error('Quiz not found');
       }
     } catch (err) {
-      console.error('Quiz fetch error:', err);
+      console.warn('Online fetch failed (expected if offline):', err);
 
       // 1. Check Local Storage Backup (Admin edits/creations) - PRIORITIZE THIS
       try {

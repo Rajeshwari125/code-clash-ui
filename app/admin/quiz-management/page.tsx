@@ -66,14 +66,7 @@ export default function QuizManagement() {
       }
 
       // Also ensure OFFLINE_QUIZ is in the list if deleted/missing (Optional, but good for "reset")
-      if (!localQuizzes.find((q: any) => q.code === OFFLINE_QUIZ.code)) {
-        const offlineSeed = {
-          ...OFFLINE_QUIZ,
-          questionsData: OFFLINE_QUIZ.questions_data,
-          created: new Date().toISOString().split('T')[0]
-        } as any;
-        localQuizzes.push(offlineSeed);
-      }
+      // REMOVED RE-SEEDING LOGIC TO ALLOW DELETION
 
     } catch (e) {
       console.error("Error reading local storage", e);
@@ -257,7 +250,17 @@ export default function QuizManagement() {
   const handleDeleteConfirm = async () => {
     if (selectedQuiz) {
       try {
-        await deleteQuiz(selectedQuiz.id);
+        try {
+          await deleteQuiz(selectedQuiz.id);
+        } catch (dbError) {
+          console.warn("Deleted locally only (DB delete failed or not needed)", dbError);
+        }
+
+        // Also delete from Local Storage
+        const localQuizzes = JSON.parse(localStorage.getItem('local_quizzes_backup') || '[]');
+        const updatedLocal = localQuizzes.filter((q: any) => q.code !== selectedQuiz.code); // Filter by code (unique) or ID
+        localStorage.setItem('local_quizzes_backup', JSON.stringify(updatedLocal));
+
         alert(`Quiz "${selectedQuiz.title}" deleted successfully!`);
         loadQuizzes(); // Reload from DB
         setSelectedQuiz(null);
