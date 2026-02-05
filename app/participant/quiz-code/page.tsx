@@ -34,7 +34,16 @@ export default function QuizCodeEntry() {
       return;
     }
 
-    setLoading(true);
+    // Check for offline code immediately
+    if (quizCode.toUpperCase() === OFFLINE_QUIZ_CODE) {
+      setFoundQuiz(OFFLINE_QUIZ);
+      setLoading(false);
+      localStorage.setItem('currentQuiz', JSON.stringify(OFFLINE_QUIZ));
+      setTimeout(() => {
+        router.push('/participant/quiz');
+      }, 1500);
+      return;
+    }
 
     setLoading(true);
 
