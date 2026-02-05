@@ -46,6 +46,26 @@ When the application detects a network failure (or cannot reach Supabase), it au
     *   Instruct students to enter quiz code: **`OFFLINE`** (or your regular code if you have internet).
     *   Students take the quiz and submit.
 
+## 📡 HOW TO SHARE LINK WITH STUDENTS (No Internet)
+
+To let students access the quiz from their phones/laptops without internet:
+
+**Step 1: Connect to Same WiFi**
+*   Make sure your Laptop (Server) and Student Mobiles are connected to the **SAME WiFi Router**.
+*   (Note: The WiFi router does **not** need internet connection, it just needs to switch data).
+
+**Step 2: Find Your Link**
+*   Run the file `START_OFFLINE_SERVER.bat`.
+*   Look for the line that says `IPv4 Address`. It will look like `192.168.1.5` (or similar).
+*   Your Student Link is: `http://192.168.1.5:3000` (Replace the number with yours).
+
+**Step 3: Share**
+*   Write this link on a the board: **http://[YOUR-IP]:3000**
+*   Ask students to type it in Chrome/Safari.
+
+**Troubleshooting:**
+*   If it doesn't load: Check your **Windows Firewall**. You might need to turn it off temporarily or allow "Node.js" through the firewall.
+
 ## Retrieving Offline Results
 
 Since offline results are stored on the **student's device**, you need to manually collect them if they never synced.
