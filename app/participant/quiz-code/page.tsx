@@ -82,8 +82,22 @@ export default function QuizCodeEntry() {
 
 
 
+      // 2. Check for the specific Admin-configured Offline Quiz (COD138)
+      // This allows access even if Local Storage wasn't explicitly seeded by visiting Admin panel first
+      if (quizCode.toUpperCase() === OFFLINE_QUIZ.code) { // Checks for 'COD138'
+        console.log("Found configured offline quiz");
+        setFoundQuiz(OFFLINE_QUIZ);
+        setLoading(false);
+        // Seed it to storage for next time/persistence
+        localStorage.setItem('currentQuiz', JSON.stringify(OFFLINE_QUIZ));
+        setTimeout(() => {
+          router.push('/participant/quiz');
+        }, 1500);
+        return;
+      }
+
       setLoading(false);
-      setError('Invalid quiz code, or network error. Try code "OFFLINE" for local mode.');
+      setError('Invalid quiz code, or network error. Ensure you have the correct code from Admin.');
     } // End of outer try/catch
   };
 
