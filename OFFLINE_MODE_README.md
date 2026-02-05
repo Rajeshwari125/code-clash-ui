@@ -2,6 +2,17 @@
 
 This revised guide explains how to operate the Code Clash platform in **Offline Mode**. This mode allows the student panel to function even without an internet connection or Supabase access.
 
+## ⚠️ CRITICAL: DO NOT USE VERCEL LINK ⚠️
+
+**If you are offline, you CANNOT use `https://code-clash-ui-seven.vercel.app`**
+
+You must run the website from your **Local Computer**:
+1.  Open the folder in VS Code
+2.  Run `Start_Offline_Server.bat` (or `npm run dev`)
+3.  Open `http://localhost:3000` in your browser.
+
+---
+
 ## How it Works
 
 When the application detects a network failure (or cannot reach Supabase), it automatically switches to local fallback mechanisms:
